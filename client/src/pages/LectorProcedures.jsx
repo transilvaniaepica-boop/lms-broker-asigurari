@@ -109,6 +109,18 @@ export default function LectorProcedures() {
     }
   };
 
+  // Ștergere Curs (Exclusiv Lector)
+  const handleDeleteCourse = async (courseId, courseTitle) => {
+    if (!confirm(`Sunteți sigur că doriți să ștergeți definitiv cursul "${courseTitle}" și testul aferent?`)) return;
+    try {
+      const res = await axios.delete(`/api/courses/${courseId}`);
+      alert(res.data.message);
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Eroare la ștergerea cursului.');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
@@ -263,6 +275,15 @@ export default function LectorProcedures() {
                     ✓ Activ pentru Cursanți
                   </span>
                 )}
+
+                {/* Buton Ștergere Curs (Doar Lector) */}
+                <button
+                  onClick={() => handleDeleteCourse(course.id, course.title)}
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition flex items-center space-x-1"
+                  title="Șterge cursul"
+                >
+                  <span>Șterge</span>
+                </button>
               </div>
             </div>
           ))}

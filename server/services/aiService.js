@@ -18,40 +18,41 @@ if (apiKey) {
 
 /**
  * Prompt 1: Transformarea procedurii brute într-un curs structurat pe module
+ * Regula de aur: Păstrează TOT conținutul procedurii, fără rezumare sau omisiuni, organizat doar didactic.
  */
 async function generateCourseFromProcedure({ title, rawContent, targetAudience }) {
   const audienceLabel = targetAudience === 'angajat' ? 'ANGAJAȚILOR (Personal intern de sediu / back-office)' : 'COLABORATORILOR (Agenți de asigurare / asistenți în brokeraj)';
 
   const prompt = `
 Ești un expert de top în formarea profesională și conformitate legală pentru intermediarii și brokerii de asigurări din România.
-Sarcina ta este să transformi textul procedurii interne de mai jos într-un curs didactic interactiv, complet, structurat riguros pe module logice de învățare.
+Sarcina ta este să transformi textul procedurii interne de mai jos într-un curs didactic structurat pe module logice de învățare.
 
 PUBLIC ȚINTĂ: ${audienceLabel}
 TITLUL PROCEDURII: "${title}"
 
-CONȚINUTUL PROCEDURII:
+CONȚINUTUL COMPLET AL PROCEDURII INTERNE:
 """
-${rawContent.slice(0, 30000)}
+${rawContent.slice(0, 50000)}
 """
 
-CERINȚE DE STRUCTURARE:
-1. Creează o introducere clară privind scopul și importanța respectării procedurii.
-2. Împarte conținutul în 3-5 module didactice bine conturate. Fiecare modul trebuie să aibă:
-   - Titlu sugestiv;
-   - Obiective de învățare;
-   - Conținut explicativ pe înțelesul publicului țintă, cu exemple practice concrete din activitatea zilnică de brokeraj;
-   - Concluzii și puncte cheie de reținut (Key Takeaways).
-3. Adaptează tonul: profesional, concis, orientat spre prevenirea erorilor operaționale, sancțiunilor ASF și respectarea strictă a normelor legale (Legea 236/2018, Norma ASF 19/2018, SBFT Legea 129/2019, GDPR).
+CERINȚĂ CRITICĂ ȘI OBLIGATORIE PRIVIND CONȚINUTUL:
+1. PĂSTREAZĂ INTEGRAL ȘI EXHAUSTIV TOT CONȚINUTUL PROCEDURII. NU rezuma, NU tăia articole, definiții, pași de lucru, cerințe sau instrucțiuni.
+2. Rolul tău este STRICT DE STRUCTURARE DIDACTICĂ:
+   - Organizează întregul text pe capitole / module logice (de exemplu: 3 până la 6 module, în funcție de complexitatea procedurii).
+   - Pentru fiecare modul, distribuie textul integral al procedurii aferent acelei părți, formatat curat în Markdown (titluri, subtitluri, liste clare cu liniuță, tabele dacă există, mențiuni îngroșate).
+   - Adaugă la începutul fiecărui modul o listă de 2-4 obiective didactice specifice conținutului inclus în acel modul.
+   - Adaugă la finalul fiecărui modul o listă de concluzii / puncte cheie de reținut (Key Takeaways).
+3. Toate prevederile legale, responsabilitățile, termenele și fluxurile operaționale din textul sursă trebuie să se regăsească integral în modulele create.
 
 RĂSPUNDE EXCLUSIV ÎN FORMAT JSON VALID (fără backticks \`\`\`json sau text introductiv) CU STRUCTURA:
 {
-  "summary": "Rezumatul executiv al cursului (1-2 paragrafe)",
+  "summary": "Prezentarea generală a procedurii și a cursului didactic...",
   "modules": [
     {
       "module_number": 1,
-      "title": "Titlul Modulului",
-      "objectives": ["obiectiv 1", "obiectiv 2"],
-      "content_markdown": "Conținutul detaliat al modulului formatat în Markdown curat...",
+      "title": "Titlul Modulului Didactic",
+      "objectives": ["Obiectiv 1", "Obiectiv 2"],
+      "content_markdown": "Textul integral al acelei secțiuni din procedură, formatat curat în Markdown, păstrând toate detaliile originale...",
       "key_takeaways": ["Punct esențial 1", "Punct esențial 2"]
     }
   ]

@@ -238,4 +238,33 @@ router.post('/:id/publish', authenticateToken, authorizeRoles('lector'), async (
   }
 });
 
+// Ștergere Curs (DOAR Lectorul are dreptul să șteargă cursuri)
+router.delete('/:id', authenticateToken, authorizeRoles('lector'), async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const courseRes = await query('SELECT * FROM courses WHERE id = $1', [courseId]);
+    if (courseRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Cursul nu a fost găsit.' });
+    }
+
+    const course = courseRes.rows[0];
+
+    // Ștergem sesiunile asociate, mesajele chat și testul (sau cascade prin DB)
+    await query('DELETE FROM courses WHERE id = $1', [courseId]);
+
+    await logAudit({
+      userId: req.user.id,
+      action: 'COURSE_DELETED',
+      targetEntity: 'courses',
+      targetId: courseId,
+      details: { title: course.title, year: course.year, audience: course.target_audience }
+    });
+
+    res.json({ message: `Cursul "${course.title}" a fost șters cu succes de către Lector.` });
+  } catch (err) {
+    console.error('Eroare la ștergerea cursului:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -121,43 +121,38 @@ RĂSPUNDE EXCLUSIV ÎN FORMAT JSON VALID (fără backticks \`\`\`json sau text i
 }
 
 /**
- * Prompt 2: Generarea a exact 12 întrebări grilă ușoare din conținutul cursului validat
+ * Prompt 2: Generarea a exact 12 întrebări grilă ușoare, complet diferite, din conținutul cursului validat
  */
 async function generateExamQuestions({ courseTitle, courseContent, targetAudience }) {
   const prompt = `
 Ești un examinator acreditat în domeniul formării profesionale a distribuitorilor în asigurări din România.
-Sarcina ta este să generezi EXACT 12 ÎNTREBĂRI GRILĂ UȘOARE din conținutul cursului de mai jos:
+Sarcina ta este să generezi EXACT 12 ÎNTREBĂRI GRILĂ UȘOARE ȘI COMPLET DIFERITE din conținutul cursului de mai jos:
 
 CURS: "${courseTitle}"
 PUBLIC ȚINTĂ: ${targetAudience}
 
 CONȚINUTUL CURSULUI VALIDAT:
 """
-${courseContent.slice(0, 30000)}
+${courseContent.slice(0, 40000)}
 """
 
-CERINȚE STRICTE PENTRU ÎNTREBĂRI:
-1. Număr exact de întrebări: 12.
-2. Dificultate: UȘOARĂ (Easy/Accessible). Scopul este verificarea însușirii noțiunilor de bază, bunului simț profesional și conformității, permițând cursanților atenți să atingă pragul de 70% (minimum 9 răspunsuri corecte din 12).
-3. Fiecare întrebare trebuie să aibă exact 4 opțiuni de răspuns (A, B, C, D).
-4. Doar o singură opțiune este corectă. Răspunsurile greșite (distractorii) trebuie să fie plauzibile, dar clar incorecte în raport cu textul.
-5. Întrebările trebuie să fie formulate strict din textul procedurii/cursului prezentat.
-6. Adaugă o scurtă explicație pentru răspunsul corect.
+REGULI STRICTE PRIVIND DIVERSITATEA ȘI FORMATUL CELOR 12 ÎNTREBĂRI:
+1. Toate cele 12 întrebări trebuie să fie COMPLET DIFERITE între ele (să abordeze secțiuni diferite ale cursului: definiții, etape, termene, responsabilități, raportare, sancțiuni, conformitate, GDPR/SBFT).
+2. Dificultate: UȘOARĂ (Easy). Întrebări clare, la obiect, care testează însușirea noțiunilor fundamentale, astfel încât un cursant atent să poată obține ușor minimum 9 din 12 (70%).
+3. Fiecare întrebare are exact 4 opțiuni de răspuns (A, B, C, D).
+4. O singură opțiune este corectă. Răspunsul corect trebuie să varieze aleatoriu ca poziție (index 0, 1, 2 sau 3) — NU pune răspunsul corect mereu pe prima poziție!
+5. Include o explicație scurtă și educativă pentru fiecare răspuns corect.
 
-RĂSPUNDE EXCLUSIV ÎN FORMAT JSON VALID (fără backticks \`\`\`json sau text adiacent) CU STRUCTURA:
+RĂSPUNDE EXCLUSIV ÎN FORMAT JSON VALID CU STRUCTURA:
 {
   "questions": [
     {
       "question_text": "Textul întrebării 1...",
-      "options": [
-        "Opțiunea A",
-        "Opțiunea B",
-        "Opțiunea C",
-        "Opțiunea D"
-      ],
-      "correct_answer_index": 0,
-      "explanation": "Scurtă explicație a răspunsului corect..."
+      "options": ["Opțiunea A", "Opțiunea B", "Opțiunea C", "Opțiunea D"],
+      "correct_answer_index": 1,
+      "explanation": "Explicație pe scurt..."
     }
+    // ... exact 12 întrebări unice
   ]
 }
 `;
@@ -166,34 +161,156 @@ RĂSPUNDE EXCLUSIV ÎN FORMAT JSON VALID (fără backticks \`\`\`json sau text a
     try {
       const model = genAI.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
-        generationConfig: { responseMimeType: 'application/json' }
+        generationConfig: { 
+          responseMimeType: 'application/json',
+          temperature: 0.3
+        }
       });
       const result = await model.generateContent(prompt);
       const data = JSON.parse(result.response.text());
-      if (data.questions && data.questions.length === 12) {
-        return data.questions;
+      if (data.questions && data.questions.length >= 10) {
+        return data.questions.slice(0, 12);
       }
     } catch (error) {
-      console.error('Eroare apel Gemini API (Întrebări Examen):', error);
+      console.error('Eroare apel Gemini API (Întrebări Examen):', error.message || error);
     }
   }
 
-  // Fallback 12 întrebări ușoare în caz de lipsă cheie
-  const dummyQuestions = [];
-  for (let i = 1; i <= 12; i++) {
-    dummyQuestions.push({
-      question_text: `Întrebarea ${i}: Care este obiectivul principal menționat în cadrul cursului "${courseTitle}"?`,
+  // Fallback garantat: 12 ÎNTREBĂRI COMPLET DIFERITE și diversificate pentru brokeraj
+  return [
+    {
+      question_text: `1. Care este scopul principal al procedurii "${courseTitle}"?`,
       options: [
-        `Respectarea cerințelor de conformitate și protejarea intereselor clientului`,
-        `Emiterea polițelor fără verificarea identității asiguratului`,
-        `Ignorarea prevederilor privind protecția datelor cu caracter personal (GDPR)`,
-        `Păstrarea documentelor de asigurare într-un format nesecurizat`
+        'Asigurarea conformității legale și protejarea intereselor clienților',
+        'Vânzarea polițelor fără evaluarea cerințelor asiguratului',
+        'Evitarea arhivării documentelor de asigurare',
+        'Ignorarea normelor emise de Autoritatea de Supraveghere Financiară'
       ],
       correct_answer_index: 0,
-      explanation: 'Respectarea cerințelor de conformitate și protejarea intereselor asiguraților reprezintă fundamentul activității.'
-    });
-  }
-  return dummyQuestions;
+      explanation: 'Conformitatea cu normele legale și protecția clienților reprezintă baza activității de distribuție.'
+    },
+    {
+      question_text: '2. Cărei categorii de personal i se aplică cu prioritate prevederile acestei proceduri?',
+      options: [
+        'Exclusiv furnizorilor de papetărie',
+        `Personalului desemnat (${targetAudience === 'angajat' ? 'angajaților interni' : 'colaboratorilor/agenților'})`,
+        'Clienților fără contract de asigurare',
+        'Persoanelor care nu activează în intermedierea de asigurări'
+      ],
+      correct_answer_index: 1,
+      explanation: 'Procedurile interne sunt obligatorii pentru personalul căruia îi sunt adresate conform fișei postului.'
+    },
+    {
+      question_text: '3. În cadrul verificării cerințelor și nevoilor clientului (DDA), ce este obligatoriu să facă distribuitorul?',
+      options: [
+        'Să propună produse fără a verifica cerințele reale ale clientului',
+        'Să identifice cerințele și necesitățile reale înainte de încheierea contractului',
+        'Să emită polița fără acordul sau informarea prealabilă a asiguratului',
+        'Să refuze transmiterea documentului de informare privind produsul (IPID)'
+      ],
+      correct_answer_index: 1,
+      explanation: 'Legea 236/2018 impune identificarea exactă a cerințelor și necesităților asiguratului.'
+    },
+    {
+      question_text: '4. Ce măsură de prevenire a spălării banilor (SBFT - Legea 129/2019) este esențială la emiterea unei polițe?',
+      options: [
+        'Identificarea și verificarea identității clientului și a beneficiarului real',
+        'Acceptarea plăților anonime fără chitanță sau ordin de plată',
+        'Distrugerea imediată a copiei actului de identitate',
+        'Neraportarea tranzacțiilor neobișnuite sau suspecte'
+      ],
+      correct_answer_index: 0,
+      explanation: 'Identificarea clientului (KYC) și a beneficiarului real este obligatorie prin lege.'
+    },
+    {
+      question_text: '5. Conform normelor GDPR (Regulamentul UE 679/2016), cum trebuie tratate datele personale ale asiguraților?',
+      options: [
+        'Publicate liber pe rețelele sociale',
+        'Păstrate în siguranță, utilizate strict pentru emiterea și gestionarea contractului',
+        'Partajate cu persoane neautorizate fără consimțământ',
+        'Stocate pe dispozitive personale necriptate și nesupravegheate'
+      ],
+      correct_answer_index: 1,
+      explanation: 'Datele cu caracter personal trebuie prelucrate în condiții stricte de confidențialitate și securitate.'
+    },
+    {
+      question_text: '6. Când trebuie transmis documentul de informare privind produsul de asigurare (IPID / PID)?',
+      options: [
+        'Înainte de încheierea contractului de asigurare',
+        'La un an după emiterea contractului',
+        'Doar dacă solicită instanța de judecată',
+        'Niciodată, documentul este opțional'
+      ],
+      correct_answer_index: 0,
+      explanation: 'IPID se transmite înainte de încheierea contractului pentru o decizie informată.'
+    },
+    {
+      question_text: '7. Ce trebuie să facă un angajat sau colaborator dacă identifică o tranzacție cu indicii suspecte?',
+      options: [
+        'Să ignore situația pentru a nu pierde comisionul',
+        'Să informeze imediat ofițerul de conformitate / responsabilități SBFT din cadrul companiei',
+        'Să avertizeze clientul că este bănuit',
+        'Să modifice datele financiare pentru a ascunde suspiciunea'
+      ],
+      correct_answer_index: 1,
+      explanation: 'Sesizarea internă promptă a ofițerului de conformitate este o obligație legală fără avertizarea clientului.'
+    },
+    {
+      question_text: '8. Care este perioada minimă de arhivare a documentelor contractuale și a evidențelor de instruire?',
+      options: [
+        'Doar 30 de zile',
+        'Minimum 5-10 ani conform normelor de audit și prescripție legală',
+        'Până la sfârșitul săptămânii curente',
+        'Documentele nu se arhivează'
+      ],
+      correct_answer_index: 1,
+      explanation: 'Retenția documentelor pentru audit și conformitate ASF este de minimum 5-10 ani.'
+    },
+    {
+      question_text: '9. Cum se sancționează nerespectarea procedurilor interne de lucru?',
+      options: [
+        'Cu recompensă financiară',
+        'Disciplinar, administrativ sau contravențional conform legii și regulamentului intern',
+        'Nu există nicio consecință',
+        'Doar printr-o felicitare scrisă'
+      ],
+      correct_answer_index: 1,
+      explanation: 'Nerespectarea procedurilor atrage răspunderea disciplinară sau sancțiuni contravenționale ASF.'
+    },
+    {
+      question_text: '10. Ce reprezintă conflictul de interese în activitatea de distribuție?',
+      options: [
+        'O situație în care interesele distribuitorului sau terților pot afecta negativ imparțialitatea față de client',
+        'O simplă negociere comercială transparentă',
+        'Faptul că două polițe au aceeași primă de asigurare',
+        'Un discount oferit conform grilei oficiale a asigurătorului'
+      ],
+      correct_answer_index: 0,
+      explanation: 'Distribuitorul trebuie să identifice și să evite situațiile ce pot prejudicia clientul.'
+    },
+    {
+      question_text: '11. Care este pragul minim de promovare stabilit pentru examinarea periodică pe platformă?',
+      options: [
+        '30% (4 întrebări corecte)',
+        '50% (6 întrebări corecte)',
+        '70% (minimum 9 răspunsuri corecte din 12)',
+        '100% exclusiv'
+      ],
+      correct_answer_index: 2,
+      explanation: 'Regulamentul platformei prevede promovarea la obținerea a cel puțin 70% (9 din 12 corecte).'
+    },
+    {
+      question_text: '12. Ce se întâmplă dacă un cursant obține un scor sub 70% la prima încercare de examinare?',
+      options: [
+        'Este exclus permanent din sistem fără drept de apel',
+        'Poate relua testul imediat, întrebările fiind reamestecate pentru consolidarea cunoștințelor',
+        'I se anulează automat contractul de muncă sau colaborare',
+        'Testul se blochează definitiv'
+      ],
+      correct_answer_index: 1,
+      explanation: 'Sistemul oferă reluare nelimitată cu amestecarea întrebărilor pentru a asigura însușirea temeinică a procedurii.'
+    }
+  ];
 }
 
 /**

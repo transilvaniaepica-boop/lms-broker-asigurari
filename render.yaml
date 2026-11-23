@@ -1,0 +1,35 @@
+services:
+  # 1. Baza de Date PostgreSQL Managed pe Render (Retenție 10 ani)
+  - type: postgres
+    name: asig-lms-db
+    databaseName: asiglms
+    user: asiglms_admin
+    plan: starter # Poate fi upgraded oricând pentru volum mare
+    ipAllowList: [] # Permite conexiuni sigure interne Render
+
+  # 2. Serviciul Web Node.js Full-Stack (Express + Socket.io + Frontend Vite integrat)
+  - type: web
+    name: asig-lms-app
+    env: node
+    plan: starter # Starter asigură conexiuni WebSocket permanente fără deconectări
+    buildCommand: npm run build
+    startCommand: node server/db/migrate.js && node server/db/seed.js && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: asig-lms-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false # Va fi introdus în Panoul Render Environment
+      - key: RESEND_API_KEY
+        sync: false # Va fi introdus în Panoul Render Environment
+      - key: RESEND_FROM_EMAIL
+        value: on-boarding@resend.dev # Sau domeniul tău verificat în Resend
+      - key: APP_URL
+        sync: false # https://asig-lms-app.onrender.com

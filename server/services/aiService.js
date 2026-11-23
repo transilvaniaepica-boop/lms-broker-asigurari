@@ -63,39 +63,58 @@ RĂSPUNDE EXCLUSIV ÎN FORMAT JSON VALID (fără backticks \`\`\`json sau text i
     try {
       const model = genAI.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
-        generationConfig: { responseMimeType: 'application/json' }
+        generationConfig: { 
+          responseMimeType: 'application/json',
+          temperature: 0.2
+        }
       });
       const result = await model.generateContent(prompt);
       const text = result.response.text();
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      if (parsed.modules && parsed.modules.length > 0) {
+        return parsed;
+      }
     } catch (error) {
-      console.error('Eroare apel Gemini API (Curs):', error);
+      console.error('Eroare apel Gemini API (Curs):', error.message || error);
     }
   }
 
-  // Fallback structurat dacă nu există cheie API configurată sau a expirat
+  // Fallback garantat: Dacă Gemini nu a returnat (sau lipsă cheie), includem 100% DIN TEXTUL ORIGINAL
+  // Nicio bucățică din procedura încărcată nu se pierde!
+  const paragraphs = rawContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  const totalChunks = Math.min(Math.max(Math.ceil(paragraphs.length / 5), 1), 6);
+  const chunkSize = Math.ceil(paragraphs.length / totalChunks);
+
+  const dynamicModules = [];
+  for (let i = 0; i < totalChunks; i++) {
+    const chunkParagraphs = paragraphs.slice(i * chunkSize, (i + 1) * chunkSize);
+    const chunkText = chunkParagraphs.join('\n\n');
+    if (!chunkText.trim()) continue;
+
+    dynamicModules.push({
+      module_number: i + 1,
+      title: `Modulul ${i + 1}: ${title} - Partea ${i + 1}`,
+      objectives: [
+        `Parcurgerea și însușirea integrală a prevederilor din Secțiunea ${i + 1}`,
+        'Respectarea cerințelor operaționale și legale aplicabile brokerajului'
+      ],
+      content_markdown: chunkText,
+      key_takeaways: [
+        'Toate normele din această secțiune sunt obligatorii în activitatea curentă.',
+        'Documentarea și conformitatea protejează brokerul și asiguratul.'
+      ]
+    });
+  }
+
   return {
-    summary: `Curs de instruire profesională generat automat pentru procedura "${title}". Adaptat pentru categoria ${audienceLabel}.`,
-    modules: [
+    summary: `Curs didactic complet generat pentru procedura "${title}". Conține textul integral al procedurii organizat pe module de învățare.`,
+    modules: dynamicModules.length > 0 ? dynamicModules : [
       {
         module_number: 1,
-        title: `Introducere și Cadrul Legal Aplicabil: ${title}`,
-        objectives: [
-          'Înțelegerea rolului procedurii în activitatea de asigurare',
-          'Identificarea cerințelor de conformitate și a riscurilor operaționale'
-        ],
-        content_markdown: `### 1. Context și Importanță\nProcedura **${title}** stabilește normele interne aplicabile personalului (${audienceLabel}) pentru asigurarea celor mai înalte standarde de etică profesională și legalitate.\n\n### 2. Principalele Obligații\nFiecare persoană implicată în distribuția sau procesarea polițelor are obligația de a verifica integritatea datelor transmise de asigurați și de a respecta secretul profesional conform GDPR.`,
-        key_takeaways: ['Conformitatea este obligatorie pentru toți angajații/colaboratorii.', 'Nerespectarea procedurii atrage răspunderea disciplinară.']
-      },
-      {
-        module_number: 2,
-        title: 'Fluxul Operațional și Pașii de Urmat',
-        objectives: [
-          'Aplicarea corectă a etapelor operaționale stabilite',
-          'Evitarea erorilor în emiterea sau consilierea clienților'
-        ],
-        content_markdown: `### Etapele de Lucru\n1. Identificarea exactă a cerințelor și nevoilor clientului (DDA / cerințe de adecvare conform Legii 236/2018).\n2. Verificarea documentelor justificative și prevenirea suspiciunilor de spălare a banilor (SBFT).\n3. Arhivarea și stocarea sigură a dosarelor de asigurare.`,
-        key_takeaways: ['Documentarea corectă este cheia auditului.', 'Sesizați imediat ofițerul de conformitate la orice neconcordanță.']
+        title: `Textul Integral al Procedurii: ${title}`,
+        objectives: ['Studierea exhaustivă a conținutului procedurii'],
+        content_markdown: rawContent,
+        key_takeaways: ['Conformitatea deplină cu procedura internă este obligatorie.']
       }
     ]
   };

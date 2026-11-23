@@ -109,15 +109,14 @@ export default function LectorProcedures() {
     }
   };
 
-  // Ștergere Curs (Exclusiv Lector)
-  const handleDeleteCourse = async (courseId, courseTitle) => {
-    if (!confirm(`Sunteți sigur că doriți să ștergeți definitiv cursul "${courseTitle}" și testul aferent?`)) return;
+  // Ascunde / Afișează Curs (Doar Lector)
+  const handleToggleHide = async (courseId) => {
     try {
-      const res = await axios.delete(`/api/courses/${courseId}`);
+      const res = await axios.post(`/api/courses/${courseId}/toggle-hide`);
       alert(res.data.message);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Eroare la ștergerea cursului.');
+      alert(err.response?.data?.error || 'Eroare la modificarea stării cursului.');
     }
   };
 
@@ -223,70 +222,87 @@ export default function LectorProcedures() {
         </h2>
 
         <div className="divide-y divide-slate-100">
-          {courses.map(course => (
-            <div key={course.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center space-x-2 mb-1">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
-                    course.target_audience === 'angajat' ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'
-                  }`}>
-                    {course.target_audience}
-                  </span>
-                  <span className="text-xs text-slate-400">An {course.year}</span>
-                  <span className="text-xs font-semibold text-slate-600">Stare: {course.status}</span>
+          {courses.map(course => {
+            const isHidden = course.is_hidden;
+
+            return (
+              <div 
+                key={course.id} 
+                className={`py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition rounded-xl px-3 ${
+                  isHidden ? 'opacity-40 bg-amber-50/40 border border-dashed border-amber-300' : ''
+                }`}
+              >
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                      course.target_audience === 'angajat' ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'
+                    }`}>
+                      {course.target_audience}
+                    </span>
+                    <span className="text-xs text-slate-400">An {course.year}</span>
+                    <span className="text-xs font-semibold text-slate-600">Stare: {course.status}</span>
+                    {isHidden && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-300">
+                        ASCUNS DE ELEVI
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-800">{course.title}</h3>
                 </div>
-                <h3 className="text-sm font-bold text-slate-800">{course.title}</h3>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Buton Pasul 2: Validare Curs */}
+                  {course.status === 'draft' && (
+                    <button
+                      onClick={() => handleValidateCourse(course.id)}
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow"
+                    >
+                      Validează Cursul
+                    </button>
+                  )}
+
+                  {/* Buton Pasul 3: Generare Test (activ doar după validare curs) */}
+                  {(course.status === 'validated' || course.status === 'active') && (
+                    <button
+                      onClick={() => handleGenerateTest(course.id)}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow flex items-center space-x-1"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Generează Întrebări Examen</span>
+                    </button>
+                  )}
+
+                  {/* Buton Publicare Curs & Test */}
+                  {course.status === 'validated' && (
+                    <button
+                      onClick={() => handlePublish(course.id)}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow"
+                    >
+                      Publică Cursul & Testul
+                    </button>
+                  )}
+
+                  {course.is_active && !isHidden && (
+                    <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg">
+                      ✓ Activ pentru Cursanți
+                    </span>
+                  )}
+
+                  {/* Buton Lector: Ascunde / Afișează */}
+                  <button
+                    onClick={() => handleToggleHide(course.id)}
+                    className={`px-3 py-1.5 border rounded-lg text-xs font-bold transition flex items-center space-x-1 ${
+                      isHidden 
+                        ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200' 
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>{isHidden ? 'Fă Vizibil' : 'Ascunde de Elevi'}</span>
+                  </button>
+                </div>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Buton Pasul 2: Validare Curs */}
-                {course.status === 'draft' && (
-                  <button
-                    onClick={() => handleValidateCourse(course.id)}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow"
-                  >
-                    Validează Cursul
-                  </button>
-                )}
-
-                {/* Buton Pasul 3: Generare Test (activ doar după validare curs) */}
-                {(course.status === 'validated' || course.status === 'active') && (
-                  <button
-                    onClick={() => handleGenerateTest(course.id)}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow flex items-center space-x-1"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Generează Întrebări Examen</span>
-                  </button>
-                )}
-
-                {/* Buton Publicare Curs & Test */}
-                {course.status === 'validated' && (
-                  <button
-                    onClick={() => handlePublish(course.id)}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow"
-                  >
-                    Publică Cursul & Testul
-                  </button>
-                )}
-
-                {course.is_active && (
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg">
-                    ✓ Activ pentru Cursanți
-                  </span>
-                )}
-
-                {/* Buton Ștergere Curs (Doar Lector) */}
-                <button
-                  onClick={() => handleDeleteCourse(course.id, course.title)}
-                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition flex items-center space-x-1"
-                  title="Șterge cursul"
-                >
-                  <span>Șterge</span>
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

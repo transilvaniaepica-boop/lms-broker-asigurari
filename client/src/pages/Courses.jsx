@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Calendar, CheckCircle2, AlertCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { BookOpen, Calendar, CheckCircle2, AlertCircle, ChevronRight, Sparkles, EyeOff, Eye } from 'lucide-react';
 
 export default function Courses() {
   const { user } = useAuth();
@@ -10,6 +10,29 @@ export default function Courses() {
   const [years, setYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const fetchCourses = async () => {
+    setLoading(true);
+    try {
+      const url = selectedYear ? `/api/courses?year=${selectedYear}` : '/api/courses';
+      const res = await axios.get(url);
+      setCourses(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleHide = async (courseId) => {
+    try {
+      const res = await axios.post(`/api/courses/${courseId}/toggle-hide`);
+      alert(res.data.message);
+      fetchCourses();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Eroare la modificarea stării cursului.');
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -27,18 +50,6 @@ export default function Courses() {
   }, []);
 
   useEffect(() => {
-    async function fetchCourses() {
-      setLoading(true);
-      try {
-        const url = selectedYear ? `/api/courses?year=${selectedYear}` : '/api/courses';
-        const res = await axios.get(url);
-        setCourses(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
     if (selectedYear !== '') {
       fetchCourses();
     }
@@ -90,11 +101,24 @@ export default function Courses() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map(course => {
             const modulesCount = course.modules_json ? course.modules_json.length : 0;
+            const isHidden = course.is_hidden;
+
             return (
               <div 
                 key={course.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between overflow-hidden"
+                className={`bg-white rounded-2xl border transition flex flex-col justify-between overflow-hidden relative ${
+                  isHidden 
+                    ? 'opacity-40 border-dashed border-amber-400 bg-amber-50/20 shadow-none' 
+                    : 'border-slate-200 shadow-sm hover:shadow-md'
+                }`}
               >
+                {isHidden && (
+                  <div className="absolute top-2 right-2 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300 flex items-center space-x-1 shadow-sm z-10">
+                    <EyeOff className="w-3 h-3" />
+                    <span>ASCUNS DE ELEVI</span>
+                  </div>
+                )}
+
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-3">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${
@@ -121,13 +145,32 @@ export default function Courses() {
 
                 <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-xs text-slate-500 font-medium">Prag promovare: 70%</span>
-                  <Link
-                    to={`/classroom/${course.id}`}
-                    className="inline-flex items-center space-x-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-                  >
-                    <span>Intră în Sală</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
+                  
+                  <div className="flex items-center space-x-2">
+                    {/* Buton Lector: Ascunde / Reafișează */}
+                    {user.role === 'lector' && (
+                      <button
+                        onClick={() => handleToggleHide(course.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1 border ${
+                          isHidden 
+                            ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200' 
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                        }`}
+                        title={isHidden ? 'Fă cursul vizibil elevilor' : 'Ascunde cursul de elevi'}
+                      >
+                        {isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
+                        <span>{isHidden ? 'Afișează' : 'Ascunde'}</span>
+                      </button>
+                    )}
+
+                    <Link
+                      to={`/classroom/${course.id}`}
+                      className="inline-flex items-center space-x-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                    >
+                      <span>Intră în Sală</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             );

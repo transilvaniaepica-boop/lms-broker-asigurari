@@ -154,6 +154,11 @@ async function migrate() {
       CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
     `);
 
+    // 10. Coloană is_hidden pe tabela courses (pentru ascundere de către Lector cu efect translucid)
+    await query(`
+      ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE;
+    `);
+
     console.log('✅ Migrarea bazei de date PostgreSQL a fost finalizată cu succes!');
   } catch (err) {
     console.error('❌ Eroare la migrarea bazei de date:', err);

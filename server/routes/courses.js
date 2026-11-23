@@ -13,14 +13,18 @@ router.get('/', authenticateToken, async (req, res) => {
     let sql = 'SELECT * FROM courses WHERE 1=1';
     const params = [];
 
-    // Cursanții (Angajat / Colaborator) văd strict categoria lor și doar cursurile active
+    // Cursanții (Angajat / Colaborator) văd strict categoria lor, doar cursurile active și care NU sunt ascunse
     if (req.user.role === 'angajat') {
       params.push('angajat');
-      sql += ` AND target_audience = $${params.length} AND is_active = true`;
+      sql += ` AND target_audience = $${params.length} AND is_active = true AND is_hidden = false`;
     } else if (req.user.role === 'colaborator') {
       params.push('colaborator');
-      sql += ` AND target_audience = $${params.length} AND is_active = true`;
+      sql += ` AND target_audience = $${params.length} AND is_active = true AND is_hidden = false`;
+    } else if (req.user.role === 'observator') {
+      // Observatorul vede cursurile care nu sunt ascunse de lector
+      sql += ` AND is_hidden = false`;
     }
+    // Lectorul vede TOATE cursurile, inclusiv cele ascunse (care vor fi afișate translucid)
 
     if (year) {
       params.push(year);
@@ -238,8 +242,8 @@ router.post('/:id/publish', authenticateToken, authorizeRoles('lector'), async (
   }
 });
 
-// Ștergere Curs (DOAR Lectorul are dreptul să șteargă cursuri)
-router.delete('/:id', authenticateToken, authorizeRoles('lector'), async (req, res) => {
+// Comutare Vizibilitate: Ascunde / Afișează Curs (DOAR Lectorul are dreptul)
+router.post('/:id/toggle-hide', authenticateToken, authorizeRoles('lector'), async (req, res) => {
   try {
     const courseId = req.params.id;
     const courseRes = await query('SELECT * FROM courses WHERE id = $1', [courseId]);
@@ -247,22 +251,39 @@ router.delete('/:id', authenticateToken, authorizeRoles('lector'), async (req, r
       return res.status(404).json({ error: 'Cursul nu a fost găsit.' });
     }
 
-    const course = courseRes.rows[0];
+    const currentHidden = courseRes.rows[0].is_hidden || false;
+    const newHidden = !currentHidden;
 
-    // Ștergem sesiunile asociate, mesajele chat și testul (sau cascade prin DB)
-    await query('DELETE FROM courses WHERE id = $1', [courseId]);
+    const result = await query(`
+      UPDATE courses
+      SET is_hidden = $1
+      WHERE id = $2
+      RETURNING *
+    `, [newHidden, courseId]);
+
+    // De asemenea ascundem/activăm testul asociat
+    await query(`
+      UPDATE tests
+      SET is_active = $1
+      WHERE course_id = $2
+    `, [!newHidden, courseId]);
 
     await logAudit({
       userId: req.user.id,
-      action: 'COURSE_DELETED',
+      action: newHidden ? 'COURSE_HIDDEN' : 'COURSE_UNHIDDEN',
       targetEntity: 'courses',
       targetId: courseId,
-      details: { title: course.title, year: course.year, audience: course.target_audience }
+      details: { is_hidden: newHidden, title: courseRes.rows[0].title }
     });
 
-    res.json({ message: `Cursul "${course.title}" a fost șters cu succes de către Lector.` });
+    res.json({
+      message: newHidden 
+        ? `Cursul "${courseRes.rows[0].title}" a fost ascuns de elevi și restul utilizatorilor.`
+        : `Cursul "${courseRes.rows[0].title}" este din nou vizibil.`,
+      course: result.rows[0]
+    });
   } catch (err) {
-    console.error('Eroare la ștergerea cursului:', err);
+    console.error('Eroare toggle-hide curs:', err);
     res.status(500).json({ error: err.message });
   }
 });

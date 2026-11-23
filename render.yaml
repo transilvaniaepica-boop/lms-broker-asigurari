@@ -12,7 +12,7 @@ services:
     name: asig-lms-app
     env: node
     plan: free # sau starter
-    buildCommand: npm run build
+    buildCommand: npm install && cd client && npm install --include=dev && npm run build
     startCommand: node server/db/migrate.js && node server/db/seed.js && npm start
     envVars:
       - key: NODE_ENV

@@ -42,6 +42,72 @@ router.get('/', authenticateToken, authorizeRoles('lector', 'observator'), async
   }
 });
 
+// Adăugare Utilizator Individual Manual (DOAR Lector)
+router.post('/create-manual', authenticateToken, authorizeRoles('lector'), async (req, res) => {
+  try {
+    const { email, fullName, role, customPassword } = req.body;
+
+    if (!email || !fullName || !role) {
+      return res.status(400).json({ error: 'Numele complet, emailul și rolul sunt câmpuri obligatorii.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = fullName.trim();
+
+    if (!['angajat', 'colaborator', 'observator'].includes(role)) {
+      return res.status(400).json({ error: 'Rol invalid. Alegeți: angajat, colaborator sau observator.' });
+    }
+
+    // Verificăm dacă adresa de email există deja
+    const existing = await query('SELECT id FROM users WHERE email = $1', [cleanEmail]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: `Adresa de email ${cleanEmail} este deja înregistrată în sistem.` });
+    }
+
+    // Dacă lectorul nu a specificat o parolă, generăm una sigură aleatorie
+    const finalPassword = customPassword && customPassword.trim() 
+      ? customPassword.trim() 
+      : 'Asig#' + crypto.randomBytes(3).toString('hex') + '!';
+
+    const passwordHash = await bcrypt.hash(finalPassword, 10);
+
+    const insertRes = await query(`
+      INSERT INTO users (email, password_hash, full_name, role)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, email, full_name, role, created_at
+    `, [cleanEmail, passwordHash, cleanName, role]);
+
+    const newUser = insertRes.rows[0];
+
+    // Trimitem emailul de bun venit cu parola generată prin Resend
+    sendWelcomeEmail({
+      email: cleanEmail,
+      fullName: cleanName,
+      password: finalPassword,
+      role
+    }).catch(err => console.error('Eroare trimitere email manual:', err));
+
+    await logAudit({
+      userId: req.user.id,
+      action: 'USER_CREATED_MANUAL',
+      targetEntity: 'users',
+      targetId: newUser.id,
+      details: { email: cleanEmail, fullName: cleanName, role }
+    });
+
+    res.json({
+      message: `Utilizatorul ${cleanName} (${cleanEmail}) a fost creat cu succes! Credențialele au fost transmise prin email.`,
+      user: {
+        ...newUser,
+        initialPassword: finalPassword
+      }
+    });
+  } catch (err) {
+    console.error('Eroare adăugare manuală utilizator:', err);
+    res.status(500).json({ error: 'Eroare internă la crearea utilizatorului: ' + err.message });
+  }
+});
+
 // Import Masiv din Excel / CSV (.xlsx)
 router.post('/import-excel', authenticateToken, authorizeRoles('lector'), upload.single('file'), async (req, res) => {
   if (!req.file) {

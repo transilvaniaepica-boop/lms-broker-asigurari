@@ -176,10 +176,10 @@ export default function Classroom() {
                   }`}
                 >
                   <div className="flex items-center space-x-2.5 min-w-0">
-                    <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                      activeModuleIndex === idx ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-600'
+                    <span className={`px-2 py-0.5 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 tracking-tight ${
+                      activeModuleIndex === idx ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700'
                     }`}>
-                      {idx + 1}
+                      pag. {idx + 1}
                     </span>
                     <span className="truncate">{m.title}</span>
                   </div>
@@ -196,7 +196,7 @@ export default function Classroom() {
           <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-sky-500/10 via-indigo-500/5 to-transparent border-l-4 border-sky-600 shadow-sm">
             <div className="flex items-center space-x-2 text-xs font-black text-sky-700 uppercase tracking-widest mb-1.5">
               <Bookmark className="w-4 h-4 text-sky-600" />
-              <span>Modulul {activeModuleIndex + 1} din {modules.length}</span>
+              <span>pag. {activeModuleIndex + 1} din {modules.length}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
               {activeModule.title}
@@ -251,17 +251,17 @@ export default function Classroom() {
               disabled={activeModuleIndex === 0}
               className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition disabled:opacity-40"
             >
-              ← Modulul Anterior
+              ← Pagina Anterioară
             </button>
-            <span className="text-xs text-slate-400 font-medium">
-              {activeModuleIndex + 1} / {modules.length}
+            <span className="text-xs text-slate-500 font-semibold px-3 py-1 bg-slate-50 rounded-lg border border-slate-200">
+              pag. {activeModuleIndex + 1} din {modules.length}
             </span>
             <button
               onClick={() => setActiveModuleIndex(i => Math.min(modules.length - 1, i + 1))}
               disabled={activeModuleIndex === modules.length - 1}
               className="px-4 py-2 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition disabled:opacity-40"
             >
-              Următorul Modul →
+              Pagina Următoare →
             </button>
           </div>
         </div>

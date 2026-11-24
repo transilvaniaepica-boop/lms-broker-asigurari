@@ -1,13 +1,14 @@
 import React from 'react';
 
 /**
- * Componentă pentru afișarea estetică, aerisită și elegantă a conținutului Markdown/procedural
- * Formatează automat titlurile, listele, paragrafele, articolele de lege și tabelele
+ * Componentă rafinată pentru afișarea conținutului cursului:
+ * - Titluri îngroșate (font-black / font-extrabold)
+ * - Background colorat translucid / pastelat pentru titluri
+ * - Aranjament modern în pagină, spațiere aerisită și elemente vizuale de accent
  */
 export default function FormattedContent({ content }) {
   if (!content) return null;
 
-  // Împărțim conținutul pe linii sau blocuri logice
   const lines = content.split('\n');
   const elements = [];
   let listItems = [];
@@ -16,14 +17,16 @@ export default function FormattedContent({ content }) {
   const flushList = () => {
     if (listItems.length > 0) {
       elements.push(
-        <ul key={`list-${keyIndex++}`} className="space-y-2.5 my-4 pl-2">
-          {listItems.map((item, idx) => (
-            <li key={idx} className="flex items-start text-slate-700 leading-relaxed text-sm">
-              <span className="w-2 h-2 rounded-full bg-sky-500 mt-2 mr-3 flex-shrink-0 shadow-sm" />
-              <span className="flex-1">{item}</span>
-            </li>
-          ))}
-        </ul>
+        <div key={`list-wrap-${keyIndex++}`} className="my-5 bg-slate-50/50 rounded-2xl p-4 border border-slate-100/80">
+          <ul className="space-y-3">
+            {listItems.map((item, idx) => (
+              <li key={idx} className="flex items-start text-slate-700 leading-relaxed text-sm">
+                <span className="w-2.5 h-2.5 rounded-full bg-sky-500/80 mt-1.5 mr-3 flex-shrink-0 ring-4 ring-sky-100" />
+                <span className="flex-1 font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       );
       listItems = [];
     }
@@ -37,33 +40,49 @@ export default function FormattedContent({ content }) {
       return;
     }
 
-    // Titlu Nivel 1 (# Titlu)
+    // Titlu Principal Nivel 1 (# Titlu)
     if (trimmed.startsWith('# ')) {
       flushList();
+      const text = trimmed.replace(/^#\s+/, '');
       elements.push(
-        <h2 key={keyIndex++} className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-8 mb-4 pb-2 border-b border-slate-200 flex items-center">
-          <span className="w-1.5 h-6 bg-sky-600 rounded-full mr-3" />
-          {trimmed.replace(/^#\s+/, '')}
-        </h2>
+        <div 
+          key={keyIndex++} 
+          className="mt-8 mb-5 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-500/10 via-blue-500/5 to-transparent border-l-4 border-sky-600 shadow-sm"
+        >
+          <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight flex items-center">
+            {text}
+          </h2>
+        </div>
       );
     }
-    // Titlu Nivel 2 (## Subtitlu sau Articol)
+    // Titlu Secțiune Nivel 2 (## Subtitlu / Articol)
     else if (trimmed.startsWith('## ')) {
       flushList();
+      const text = trimmed.replace(/^##\s+/, '');
       elements.push(
-        <h3 key={keyIndex++} className="text-lg font-bold text-slate-800 mt-6 mb-3 flex items-center">
-          <span className="w-1.5 h-4 bg-emerald-500 rounded-full mr-2.5" />
-          {trimmed.replace(/^##\s+/, '')}
-        </h3>
+        <div 
+          key={keyIndex++} 
+          className="mt-7 mb-4 p-3.5 sm:p-4 rounded-xl bg-emerald-500/10 border-l-4 border-emerald-500"
+        >
+          <h3 className="text-base sm:text-lg font-black text-emerald-950 tracking-tight flex items-center">
+            {text}
+          </h3>
+        </div>
       );
     }
-    // Titlu Nivel 3 (### Secțiune)
+    // Titlu Sub-Secțiune Nivel 3 (### Punct procedural)
     else if (trimmed.startsWith('### ')) {
       flushList();
+      const text = trimmed.replace(/^###\s+/, '');
       elements.push(
-        <h4 key={keyIndex++} className="text-sm sm:text-base font-bold text-sky-900 mt-5 mb-2 uppercase tracking-wide">
-          {trimmed.replace(/^###\s+/, '')}
-        </h4>
+        <div 
+          key={keyIndex++} 
+          className="mt-6 mb-3 px-3.5 py-2 rounded-lg bg-indigo-500/10 inline-block border border-indigo-200/50"
+        >
+          <h4 className="text-xs sm:text-sm font-extrabold text-indigo-900 uppercase tracking-wider">
+            {text}
+          </h4>
+        </div>
       );
     }
     // Liste cu marcatori (- sau * sau numere 1.)
@@ -72,16 +91,19 @@ export default function FormattedContent({ content }) {
     } else if (/^\d+\.\s+/.test(trimmed)) {
       listItems.push(trimmed.replace(/^\d+\.\s+/, ''));
     }
-    // Mențiuni speciale / Note de atenție (> Notă)
+    // Note de atenționare / Avertismente legale (> Notă)
     else if (trimmed.startsWith('>')) {
       flushList();
       elements.push(
-        <div key={keyIndex++} className="my-4 p-4 rounded-xl bg-amber-50/70 border-l-4 border-amber-500 text-amber-900 text-sm leading-relaxed shadow-sm">
+        <div 
+          key={keyIndex++} 
+          className="my-5 p-4 sm:p-5 rounded-2xl bg-amber-500/10 border-l-4 border-amber-500 text-amber-950 text-sm leading-relaxed shadow-sm font-medium"
+        >
           {trimmed.replace(/^>\s*/, '')}
         </div>
       );
     }
-    // Paragraf standard
+    // Paragraf standard cu interlinie și spațiere armonioasă
     else {
       flushList();
       elements.push(
@@ -94,5 +116,5 @@ export default function FormattedContent({ content }) {
 
   flushList();
 
-  return <div className="space-y-1 text-slate-800">{elements}</div>;
+  return <div className="space-y-2 text-slate-800">{elements}</div>;
 }

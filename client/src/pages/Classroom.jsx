@@ -192,13 +192,13 @@ export default function Classroom() {
 
         {/* Coloana 2: Conținut Modul Activ - Aspect Aerisit & Premium */}
         <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-10 shadow-sm">
-          {/* Header Modul */}
-          <div className="mb-6 pb-4 border-b border-slate-100">
-            <div className="flex items-center space-x-2 text-xs font-bold text-sky-600 uppercase tracking-wider mb-1">
-              <Bookmark className="w-3.5 h-3.5" />
+          {/* Header Modul cu fundal translucid stilizat */}
+          <div className="mb-8 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-sky-500/10 via-indigo-500/5 to-transparent border-l-4 border-sky-600 shadow-sm">
+            <div className="flex items-center space-x-2 text-xs font-black text-sky-700 uppercase tracking-widest mb-1.5">
+              <Bookmark className="w-4 h-4 text-sky-600" />
               <span>Modulul {activeModuleIndex + 1} din {modules.length}</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
               {activeModule.title}
             </h2>
           </div>

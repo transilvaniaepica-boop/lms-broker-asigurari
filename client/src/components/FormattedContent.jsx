@@ -13,20 +13,22 @@ function cleanAsterisks(text) {
 }
 
 /**
- * Reconstruiește fluxul de text normal (dezlipește ruperile artificiale de rând generate de extragerea din PDF/tabele):
- * Unește rândurile frânte la mijlocul propoziției într-un text fluid și continuu pe tot rândul ecranului.
+ * Reconstruiește fluxul de text normal:
+ * - Unește rândurile frânte artificial (de la extragerea tabelelor/PDF) într-o singură frază continuă.
+ * - Fiecare frază / paragraf se extinde de la un capăt la celălalt al ecranului (w-full).
+ * - O nouă linie începe doar când se termină o propoziție (. ! ?) sau când apare o etapă/titlu nou.
  */
 function reflowBrokenLines(rawText) {
   if (!rawText) return [];
 
   const rawLines = rawText.split('\n');
   const normalizedBlocks = [];
-  let currentParagraph = '';
+  let currentSentence = '';
 
-  const flushParagraph = () => {
-    if (currentParagraph.trim()) {
-      normalizedBlocks.push({ type: 'p', text: currentParagraph.trim() });
-      currentParagraph = '';
+  const flushSentence = () => {
+    if (currentSentence.trim()) {
+      normalizedBlocks.push({ type: 'p', text: currentSentence.trim() });
+      currentSentence = '';
     }
   };
 
@@ -34,74 +36,79 @@ function reflowBrokenLines(rawText) {
     const trimmed = line.trim();
 
     if (!trimmed) {
-      flushParagraph();
+      // Dacă propoziția curentă se termină cu punct/semn de punctuație, o eliberăm ca paragraf complet
+      if (currentSentence && /[.!?:]$/.test(currentSentence.trim())) {
+        flushSentence();
+      }
       return;
     }
 
-    // Detectare Titlu Nivel 1
+    // Detectare Titluri Markdown (#, ##, ###)
     if (trimmed.startsWith('# ')) {
-      flushParagraph();
+      flushSentence();
       normalizedBlocks.push({ type: 'h1', text: trimmed.replace(/^#\s+/, '') });
       return;
     }
-
-    // Detectare Titlu Nivel 2
     if (trimmed.startsWith('## ')) {
-      flushParagraph();
+      flushSentence();
       normalizedBlocks.push({ type: 'h2', text: trimmed.replace(/^##\s+/, '') });
       return;
     }
-
-    // Detectare Titlu Nivel 3
     if (trimmed.startsWith('### ')) {
-      flushParagraph();
+      flushSentence();
       normalizedBlocks.push({ type: 'h3', text: trimmed.replace(/^###\s+/, '') });
       return;
     }
 
-    // Detectare Note / Citate
+    // Detectare Citate / Avertismente (>)
     if (trimmed.startsWith('>')) {
-      flushParagraph();
+      flushSentence();
       normalizedBlocks.push({ type: 'quote', text: trimmed.replace(/^>\s*/, '') });
       return;
     }
 
-    // Detectare Rânduri de Listă (- sau * sau 1. etc.)
-    if (/^[-*]\s+/.test(trimmed) || /^\d+[\.\)]\s+/.test(trimmed)) {
-      flushParagraph();
-      normalizedBlocks.push({ type: 'li', text: trimmed.replace(/^[-*]\s+|\d+[\.\)]\s+/, '') });
+    // Detectare liste cu liniuță sau glonț (- sau *)
+    if (/^[-*]\s+/.test(trimmed)) {
+      flushSentence();
+      normalizedBlocks.push({ type: 'li', text: trimmed.replace(/^[-*]\s+/, '') });
       return;
     }
 
-    // Dacă este o continuare a unui rând anterior din PDF, unim cu spațiu
-    if (currentParagraph) {
-      // Dacă rândul curent începe cu o cifră izolată sau etapă nouă (ex: "4", "5", "6") o tratăm ca început nou
-      if (/^\d+$/.test(trimmed)) {
-        flushParagraph();
-        currentParagraph = `Pasul / Etapa ${trimmed}: `;
+    // Detectare Pași Procedurali / Cifre de etape (ex: "4", "5", "6", "Etapa 4", "Pasul 4")
+    if (/^\d+$/.test(trimmed)) {
+      flushSentence();
+      currentSentence = `Etapa ${trimmed}: `;
+      return;
+    }
+    if (/^\d+[\.\)]\s+/.test(trimmed)) {
+      flushSentence();
+      currentSentence = trimmed + ' ';
+      return;
+    }
+
+    // Dacă avem deja text acumulat:
+    if (currentSentence) {
+      const prevTrimmed = currentSentence.trim();
+      const endsWithSentencePunctuation = /[.!?]$/.test(prevTrimmed);
+      const startsWithCapital = /^[A-ZĂÎÂȘȚ]/.test(trimmed);
+
+      // Dacă propoziția anterioară s-a terminat cu punct și noul rând începe cu literă mare, facem un nou paragraf
+      if (endsWithSentencePunctuation && startsWithCapital) {
+        flushSentence();
+        currentSentence = trimmed;
       } else {
-        currentParagraph += ' ' + trimmed;
+        // Altfel, unim cuvintele într-un singur rând continuu
+        currentSentence += ' ' + trimmed;
       }
     } else {
-      if (/^\d+$/.test(trimmed)) {
-        currentParagraph = `Pasul / Etapa ${trimmed}: `;
-      } else {
-        currentParagraph = trimmed;
-      }
+      currentSentence = trimmed;
     }
   });
 
-  flushParagraph();
+  flushSentence();
   return normalizedBlocks;
 }
 
-/**
- * Componentă rafinată pentru afișarea conținutului cursului:
- * - Fluidizează textul pe toată lățimea rândului (fără tăieri ciudate de la PDF)
- * - Titluri îngroșate (font-black / font-extrabold)
- * - Background colorat translucid / pastelat pentru titluri
- * - Fără asteriscuri reziduale (*)
- */
 export default function FormattedContent({ content }) {
   if (!content) return null;
 
@@ -185,7 +192,11 @@ export default function FormattedContent({ content }) {
     } else if (block.type === 'p') {
       const text = cleanAsterisks(block.text);
       elements.push(
-        <p key={keyIndex++} className="text-slate-800 leading-relaxed text-sm sm:text-base mb-4 text-justify font-normal tracking-normal">
+        <p 
+          key={keyIndex++} 
+          className="w-full text-slate-800 leading-relaxed text-sm sm:text-base mb-4 text-justify font-normal"
+          style={{ textJustify: 'inter-word' }}
+        >
           {text}
         </p>
       );
@@ -194,5 +205,5 @@ export default function FormattedContent({ content }) {
 
   flushListBuffer();
 
-  return <div className="space-y-2 text-slate-800">{elements}</div>;
+  return <div className="space-y-3 text-slate-800 w-full">{elements}</div>;
 }

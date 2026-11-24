@@ -1,9 +1,31 @@
 import React from 'react';
 
 /**
+ * Elimină simbolurile `*` din text dacă nu reprezintă operație de înmulțire între numere (ex: 2 * 3).
+ * Tratează markdown bold (**text**), italic (*text*), marcatori reziduali etc.
+ */
+function cleanAsterisks(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  // Pasul 1: Înlocuim temporar înmulțirile matematice valide (cifre separate de *)
+  // ex: "5 * 10" sau "5*10"
+  const mathPlaceholder = '___MATH_MULT___';
+  let processed = text.replace(/(\d+)\s*\*\s*(\d+)/g, `$1 ${mathPlaceholder} $2`);
+
+  // Pasul 2: Eliminăm toate celelalte apariții de * (inclusiv **, *** etc.)
+  processed = processed.replace(/\*+/g, '');
+
+  // Pasul 3: Restaurăm semnul de înmulțire matematică
+  processed = processed.replace(new RegExp(mathPlaceholder, 'g'), '×');
+
+  return processed.trim();
+}
+
+/**
  * Componentă rafinată pentru afișarea conținutului cursului:
  * - Titluri îngroșate (font-black / font-extrabold)
  * - Background colorat translucid / pastelat pentru titluri
+ * - Fără asteriscuri reziduale (*) din markdown/raw text
  * - Aranjament modern în pagină, spațiere aerisită și elemente vizuale de accent
  */
 export default function FormattedContent({ content }) {
@@ -22,7 +44,7 @@ export default function FormattedContent({ content }) {
             {listItems.map((item, idx) => (
               <li key={idx} className="flex items-start text-slate-700 leading-relaxed text-sm">
                 <span className="w-2.5 h-2.5 rounded-full bg-sky-500/80 mt-1.5 mr-3 flex-shrink-0 ring-4 ring-sky-100" />
-                <span className="flex-1 font-medium">{item}</span>
+                <span className="flex-1 font-medium">{cleanAsterisks(item)}</span>
               </li>
             ))}
           </ul>
@@ -43,7 +65,7 @@ export default function FormattedContent({ content }) {
     // Titlu Principal Nivel 1 (# Titlu)
     if (trimmed.startsWith('# ')) {
       flushList();
-      const text = trimmed.replace(/^#\s+/, '');
+      const text = cleanAsterisks(trimmed.replace(/^#\s+/, ''));
       elements.push(
         <div 
           key={keyIndex++} 
@@ -58,7 +80,7 @@ export default function FormattedContent({ content }) {
     // Titlu Secțiune Nivel 2 (## Subtitlu / Articol)
     else if (trimmed.startsWith('## ')) {
       flushList();
-      const text = trimmed.replace(/^##\s+/, '');
+      const text = cleanAsterisks(trimmed.replace(/^##\s+/, ''));
       elements.push(
         <div 
           key={keyIndex++} 
@@ -73,7 +95,7 @@ export default function FormattedContent({ content }) {
     // Titlu Sub-Secțiune Nivel 3 (### Punct procedural)
     else if (trimmed.startsWith('### ')) {
       flushList();
-      const text = trimmed.replace(/^###\s+/, '');
+      const text = cleanAsterisks(trimmed.replace(/^###\s+/, ''));
       elements.push(
         <div 
           key={keyIndex++} 
@@ -94,21 +116,23 @@ export default function FormattedContent({ content }) {
     // Note de atenționare / Avertismente legale (> Notă)
     else if (trimmed.startsWith('>')) {
       flushList();
+      const text = cleanAsterisks(trimmed.replace(/^>\s*/, ''));
       elements.push(
         <div 
           key={keyIndex++} 
           className="my-5 p-4 sm:p-5 rounded-2xl bg-amber-500/10 border-l-4 border-amber-500 text-amber-950 text-sm leading-relaxed shadow-sm font-medium"
         >
-          {trimmed.replace(/^>\s*/, '')}
+          {text}
         </div>
       );
     }
     // Paragraf standard cu interlinie și spațiere armonioasă
     else {
       flushList();
+      const text = cleanAsterisks(trimmed);
       elements.push(
         <p key={keyIndex++} className="text-slate-700 leading-relaxed text-sm sm:text-base mb-4 text-justify font-normal">
-          {trimmed}
+          {text}
         </p>
       );
     }

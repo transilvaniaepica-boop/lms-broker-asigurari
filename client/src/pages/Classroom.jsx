@@ -118,35 +118,54 @@ export default function Classroom() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       
-      {/* Top Banner Sala Virtuală */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <Link to="/courses" className="inline-flex items-center text-xs font-semibold text-sky-600 hover:text-sky-800 mb-2">
-            <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Înapoi la Lista Cursurilor
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-900">{course.title}</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Procedură oficială valabilă pentru anul {course.year} • Public: <span className="font-semibold uppercase">{course.target_audience}</span>
-          </p>
+      {/* Top Banner Sala Virtuală (NN/g: Clear Progress Tracking & Status Indicator) */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-sm mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="space-y-1.5">
+          {/* Breadcrumb Navigation conform NN/g */}
+          <nav className="flex items-center space-x-2 text-xs font-semibold text-slate-500 mb-1" aria-label="Breadcrumb">
+            <Link to="/courses" className="text-sky-600 hover:text-sky-800 transition flex items-center">
+              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Sălile de Curs
+            </Link>
+            <span>/</span>
+            <span className="text-slate-400 truncate max-w-xs">{course.title}</span>
+          </nav>
+
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+            {course.title}
+          </h1>
+
+          <div className="flex flex-wrap items-center gap-2 pt-0.5">
+            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+              course.target_audience === 'angajat' ? 'bg-emerald-500/10 text-emerald-800 border border-emerald-200/60' : 'bg-indigo-500/10 text-indigo-800 border border-indigo-200/60'
+            }`}>
+              {course.target_audience === 'angajat' ? 'Angajat Sediu' : 'Colaborator'}
+            </span>
+            <span className="text-xs text-slate-400 font-medium">• Procedură oficială anul {course.year}</span>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <div className="text-xs text-slate-400 font-medium">Timp Sesiune Curentă</div>
-            <div className="text-sm font-bold text-slate-800 flex items-center justify-end">
-              <Clock className="w-4 h-4 mr-1 text-sky-600" />
+        {/* Timp Sesiune & Buton Examen (NN/g Prominent Next Step CTA) */}
+        <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-200/80">
+          <div className="text-left sm:text-right pr-2 sm:border-r sm:border-slate-200">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Timp Studiu Sesiune</div>
+            <div className="text-sm font-black text-slate-900 flex items-center mt-0.5">
+              <Clock className="w-4 h-4 mr-1.5 text-sky-600 animate-pulse" />
               {formatSeconds(studyTimeSeconds)}
             </div>
           </div>
 
-          {test && (
+          {test ? (
             <Link
               to={`/exam/${test.id}`}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition shadow-md shadow-emerald-600/20 flex items-center space-x-2"
+              className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-black transition shadow-md shadow-emerald-600/25 flex items-center space-x-2"
             >
               <FileCheck className="w-4 h-4" />
               <span>Susține Examenul (12 Întrebări)</span>
             </Link>
+          ) : (
+            <div className="text-xs text-slate-400 font-medium italic">
+              Testul este în curs de validare
+            </div>
           )}
         </div>
       </div>

@@ -52,7 +52,7 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
               Email Utilizator
@@ -62,6 +62,7 @@ export default function Login() {
               <input
                 type="email"
                 required
+                autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="exemplu@brokerasig.ro"
@@ -79,6 +80,7 @@ export default function Login() {
               <input
                 type="password"
                 required
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -97,39 +99,10 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Demo Fast Login Buttons */}
-        <div className="mt-8 pt-6 border-t border-slate-100">
-          <p className="text-xs font-medium text-slate-400 text-center mb-3">Acces Rapid Roluri Demonstrative:</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => handleQuickFill('lector@brokerasig.ro', 'Admin2026!')}
-              className="p-2 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 hover:bg-amber-100 font-medium text-left truncate"
-            >
-              🎓 Lector Formator
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill('observator@brokerasig.ro', 'Audit2026!')}
-              className="p-2 bg-rose-50 text-rose-800 rounded-lg border border-rose-200 hover:bg-rose-100 font-medium text-left truncate"
-            >
-              🛡️ Observator Audit
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill('angajat.demo@brokerasig.ro', 'User2026!')}
-              className="p-2 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200 hover:bg-emerald-100 font-medium text-left truncate"
-            >
-              💼 Cursant Angajat
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill('colaborator.demo@brokerasig.ro', 'User2026!')}
-              className="p-2 bg-indigo-50 text-indigo-800 rounded-lg border border-indigo-200 hover:bg-indigo-100 font-medium text-left truncate"
-            >
-              🤝 Cursant Colaborator
-            </button>
-          </div>
+        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+          <p className="text-xs text-slate-400">
+            Conectare securizată SSL • Professional Broker de Asigurare
+          </p>
         </div>
 
       </div>

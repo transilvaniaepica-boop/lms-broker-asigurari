@@ -2,19 +2,19 @@ const bcrypt = require('bcryptjs');
 const { query, pool } = require('./index');
 
 async function seed() {
-  console.log('--- Inițializare Utilizatori Default (Lector & Observator) ---');
+  console.log('--- Inițializare / Actualizare Utilizatori Default ---');
   try {
-    const passwordHash = await bcrypt.hash('Admin2026!', 10);
+    const lectorHash = await bcrypt.hash('Zlati.222193', 10);
     const observerHash = await bcrypt.hash('Audit2026!', 10);
     const userHash = await bcrypt.hash('User2026!', 10);
 
-    // 1. Lector Administrator
+    // 1. Lector Administrator cu parola Zlati.222193
     await query(`
       INSERT INTO users (email, password_hash, full_name, role)
       VALUES ($1, $2, $3, $4)
       ON CONFLICT (email) DO UPDATE 
-      SET full_name = EXCLUDED.full_name, role = EXCLUDED.role;
-    `, ['lector@brokerasig.ro', passwordHash, 'Lector Principal Asigurări', 'lector']);
+      SET password_hash = EXCLUDED.password_hash, full_name = EXCLUDED.full_name, role = EXCLUDED.role;
+    `, ['lector@brokerasig.ro', lectorHash, 'Lector Principal Asigurări', 'lector']);
 
     // 2. Observator (Audit / Supraveghere Read-Only)
     await query(`
